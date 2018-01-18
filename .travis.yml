@@ -1,0 +1,14 @@
+go:
+  - master
+
+
+notifications:
+  email: false
+
+before_script:
+  - go get github.com/gorilla/websocket
+
+script:
+  - test -z $(gofmt -s -l $GO_FILES)  # check if files are gofmt'ed (https://golang.org/cmd/gofmt/)
+  - go vet -all -v ./...              # go vet all the files        (https://golang.org/cmd/vet/)
+  - golint -set_exit_status $(go list ./...) # check if the files follow the recommended coding style

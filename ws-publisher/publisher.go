@@ -15,13 +15,13 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-var things_to_push = make(chan []byte)
+var thingsToPush = make(chan []byte)
 
 func main() {
-	defer close(things_to_push)
+	defer close(thingsToPush)
 
 	url := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/pushmsg"}
-	service_conn, _, err := websocket.DefaultDialer.Dial(url.String(), nil)
+	serviceConn, _, err := websocket.DefaultDialer.Dial(url.String(), nil)
 
 	if err != nil { // add retry later
 		fmt.Println(err)
@@ -29,12 +29,12 @@ func main() {
 	}
 
 	go func() {
-		defer service_conn.Close()
+		defer serviceConn.Close()
 
 		for {
 			select {
-			case m := <- things_to_push:
-				err := service_conn.WriteMessage(websocket.TextMessage, m)
+			case m := <-thingsToPush:
+				err := serviceConn.WriteMessage(websocket.TextMessage, m)
 
 				if err != nil {
 					fmt.Printf("Error sending msg: %s", m)
@@ -60,7 +60,7 @@ func main() {
 				return
 			}
 
-			things_to_push <- msg
+			thingsToPush <- msg
 			return
 		}
 	})

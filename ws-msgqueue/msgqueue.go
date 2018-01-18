@@ -1,24 +1,23 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
-	"log"
-	"fmt"
 )
 
-var upgrader = websocket.Upgrader {
-	ReadBufferSize: 1024,
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool { //disable after done with js tests
 		return true
 	},
 }
 
-var message_queue = make(chan []byte, 100)
+var messageQueue = make(chan []byte, 100)
 
 func main() {
-	defer close(message_queue)
+	defer close(messageQueue)
 
 	http.HandleFunc("/pushmsg", func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
@@ -38,7 +37,7 @@ func main() {
 					fmt.Println(err)
 					return
 				}
-				message_queue <- msg
+				messageQueue <- msg
 			}
 		}()
 	})
@@ -47,7 +46,7 @@ func main() {
 		conn, err := upgrader.Upgrade(w, r, nil)
 
 		if err != nil {
-			log.Println(err)
+			fmt.Println(err)
 			return
 		}
 
@@ -56,7 +55,7 @@ func main() {
 
 			for {
 				select {
-				case m := <- message_queue:
+				case m := <-messageQueue:
 					conn.WriteMessage(websocket.TextMessage, m)
 				}
 			}

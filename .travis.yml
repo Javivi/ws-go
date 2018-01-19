@@ -13,4 +13,4 @@ before_script:
 script:
   - test -z $(gofmt -s -l $GO_FILES)  # check if files are gofmt'ed (https://golang.org/cmd/gofmt/)
   - go vet ./...                      # go vet all the files        (https://golang.org/cmd/vet/)
-  - golint -set_exit_status ./...     # check if the files follow the recommended coding style
+  - golint -set_exit_status ./...     # check coding style          (https://github.com/golang/lint)

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
 	"net/url"
+	"os"
 )
 
 var upgrader = websocket.Upgrader{
@@ -18,7 +20,8 @@ var upgrader = websocket.Upgrader{
 var subscribed = make(map[*websocket.Conn]bool)
 
 func main() {
-	url := url.URL{Scheme: "ws", Host: "localhost:8080", Path: "/popmsg"}
+	url := url.URL{Scheme: "wss", Host: "localhost:8080", Path: "/popmsg"}
+	websocket.DefaultDialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	serviceConn, _, err := websocket.DefaultDialer.Dial(url.String(), nil)
 
 	if err != nil { // add retry later
@@ -54,5 +57,9 @@ func main() {
 		subscribed[conn] = true
 	})
 
-	http.ListenAndServe("localhost:8082", nil)
+	err = http.ListenAndServeTLS("localhost:8082", os.Getenv("WS_CERT"), os.Getenv("WS_CERTKEY"), nil)
+
+	if err != nil {
+		fmt.Println(err)
+	}
 }

@@ -5,6 +5,10 @@ go:
 notifications:
   email: false
 
+env:
+  - WS_CERT ./server.crt
+  - WS_CERTKEY ./server.key
+  
 before_script:
   - GO_FILES=$(find . -iname '*.go' -type f)
   - go get github.com/gorilla/websocket

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
+	"os"
 )
 
 var upgrader = websocket.Upgrader{
@@ -62,5 +63,9 @@ func main() {
 		}()
 	})
 
-	http.ListenAndServe("localhost:8080", nil)
+	err := http.ListenAndServeTLS("localhost:8080", os.Getenv("WS_CERT"), os.Getenv("WS_CERTKEY"), nil)
+
+	if err != nil {
+		fmt.Println(err)
+	}
 }

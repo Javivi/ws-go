@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"github.com/gorilla/websocket"
@@ -29,7 +30,8 @@ func main() {
 		return
 	}
 
-	url := url.URL{Scheme: "ws", Host: *addr, Path: path}
+	url := url.URL{Scheme: "wss", Host: *addr, Path: path}
+	websocket.DefaultDialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	serviceConn, _, err := websocket.DefaultDialer.Dial(url.String(), nil)
 
 	if err != nil {

@@ -57,7 +57,7 @@ func main() {
 		subscribed[conn] = true
 	})
 
-	err = http.ListenAndServeTLS("localhost:8082", os.Getenv("WS_CERT"), os.Getenv("WS_CERTKEY"), nil)
+	err = http.ListenAndServeTLS("localhost:8082", os.Getenv("WS_CERT_DIR")+"server.crt", os.Getenv("WS_CERT_DIR")+"server.key", nil)
 
 	if err != nil {
 		fmt.Println(err)

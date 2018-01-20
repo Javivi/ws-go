@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
@@ -18,57 +19,100 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-var thingsToPush = make(chan []byte)
+var thingsToPush = make(chan []byte, 10)
 
 func main() {
-	pushURL := url.URL{Scheme: "wss", Host: "localhost:8080", Path: "/pushmsg"}
-	authHeader := http.Header{"Authorization": {"Basic " + base64.StdEncoding.EncodeToString([]byte("hello:test"))}}
+	pushConn, err := dialToService("localhost:8080", "/pushmsg", "hello", "test")
+
+	if err != nil {
+		fmt.Printf("ERROR [%s] dialing server\n", err)
+		return
+	}
+
+	go pushMessages(pushConn)
+
+	ready := make(chan bool, 1)
+	err = initServer("localhost:8081", os.Getenv("WS_CERT_DIR"), ready)
+
+	if err != nil {
+		fmt.Printf("ERROR [%s] initialising server\n", err)
+	}
+}
+
+func dialToService(addr string, path string, username string, password string) (*websocket.Conn, error) {
+	pushURL := url.URL{Scheme: "wss", Host: addr, Path: path}
+	authHeader := http.Header{"Authorization": {"Basic " + base64.StdEncoding.EncodeToString([]byte(username+":"+password))}}
 	websocket.DefaultDialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
 	pushConn, _, err := websocket.DefaultDialer.Dial(pushURL.String(), authHeader)
 
 	if err != nil {
-		fmt.Println(err)
-		return
+		return nil, err
 	}
 
-	go func() {
-		for {
-			select {
-			case msg := <-thingsToPush:
-				err := pushConn.WriteMessage(websocket.TextMessage, msg)
+	return pushConn, nil
+}
 
-				if err != nil {
-					fmt.Printf("ERROR [%s] sending msg: %s\n", err, msg)
-				}
+func pushMessages(conn *websocket.Conn) {
+	for {
+		select {
+		case msg := <-thingsToPush:
+			err := conn.WriteMessage(websocket.TextMessage, msg)
+
+			if err != nil {
+				fmt.Printf("ERROR [%s] sending msg: %s\n", err, msg)
+				continue
 			}
+
+			fmt.Printf("[publisher] pushing %s", msg)
 		}
-	}()
+	}
+}
+
+func initServer(addr string, certDir string, ch chan<- bool) error {
+	if certDir == "" {
+		err := errors.New("initServer: certDir is not defined")
+		return err
+	}
 
 	http.HandleFunc("/publish", func(w http.ResponseWriter, r *http.Request) {
+		username, password, ok := r.BasicAuth()
+
+		if !ok || username != "hello" || password != "test" {
+			fmt.Printf("ERROR [%s:%s] invalid credentials\n", username, password)
+			return
+		}
+
 		conn, err := upgrader.Upgrade(w, r, nil)
 
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("ERROR [%s] upgrading connection\n", err)
 			return
 		}
 
-		for {
-			_, msg, err := conn.ReadMessage()
+		go func() {
+			for {
+				_, msg, err := conn.ReadMessage()
 
-			if err != nil {
-				fmt.Println(err)
-				return
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+
+				thingsToPush <- msg
+
+				fmt.Printf("[publisher] received %s", msg)
 			}
-
-			thingsToPush <- msg
-			return
-		}
+		}()
 	})
 
-	err = http.ListenAndServeTLS("localhost:8081", os.Getenv("WS_CERT_DIR")+"server.crt", os.Getenv("WS_CERT_DIR")+"server.key", nil)
+	ch <- true
 
-	if err != nil {
-		fmt.Println(err)
+	err := http.ListenAndServeTLS(addr, certDir+"server.crt", certDir+"server.key", nil)
+
+	if err != http.ErrServerClosed {
+		return err
 	}
+
+	return nil
 }

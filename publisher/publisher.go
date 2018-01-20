@@ -21,11 +21,11 @@ var upgrader = websocket.Upgrader{
 var thingsToPush = make(chan []byte)
 
 func main() {
-	pushUrl := url.URL{Scheme: "wss", Host: "localhost:8080", Path: "/pushmsg"}
+	pushURL := url.URL{Scheme: "wss", Host: "localhost:8080", Path: "/pushmsg"}
 	authHeader := http.Header{"Authorization": {"Basic " + base64.StdEncoding.EncodeToString([]byte("hello:test"))}}
 	websocket.DefaultDialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	pushConn, _, err := websocket.DefaultDialer.Dial(pushUrl.String(), authHeader)
+	pushConn, _, err := websocket.DefaultDialer.Dial(pushURL.String(), authHeader)
 
 	if err != nil {
 		fmt.Println(err)
@@ -35,11 +35,11 @@ func main() {
 	go func() {
 		for {
 			select {
-			case m := <-thingsToPush:
-				err := pushConn.WriteMessage(websocket.TextMessage, m)
+			case msg := <-thingsToPush:
+				err := pushConn.WriteMessage(websocket.TextMessage, msg)
 
 				if err != nil {
-					fmt.Printf("ERROR [%s] sending msg: %s\n", err, m)
+					fmt.Printf("ERROR [%s] sending msg: %s\n", err, msg)
 				}
 			}
 		}
@@ -47,7 +47,6 @@ func main() {
 
 	http.HandleFunc("/publish", func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
-		defer conn.Close()
 
 		if err != nil {
 			fmt.Println(err)

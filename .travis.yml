@@ -21,6 +21,6 @@ script:
   - test -z $(gofmt -s -l $GO_FILES)  # check if files are gofmt'ed (https://golang.org/cmd/gofmt/)
   - go vet ./...                      # go vet all the files        (https://golang.org/cmd/vet/)
   - golint -set_exit_status ./...     # check coding style          (https://github.com/golang/lint)
-  - go test -v ./...
-  - gover
+  - go test -v ./msgqueue -coverprofile=gover.coverprofile
+#  - gover
   - goveralls -coverprofile=gover.coverprofile -service=travis-ci -repotoken $COVERALLS_TOKEN

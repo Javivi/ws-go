@@ -14,11 +14,13 @@ before_script:
   - go get github.com/gorilla/websocket
   - go get github.com/golang/lint/golint
   - go get github.com/mattn/goveralls
+  - go get github.com/sozorogami/gover
 
 script:
   - echo "$WS_CERT_DIR"
   - test -z $(gofmt -s -l $GO_FILES)  # check if files are gofmt'ed (https://golang.org/cmd/gofmt/)
   - go vet ./...                      # go vet all the files        (https://golang.org/cmd/vet/)
   - golint -set_exit_status ./...     # check coding style          (https://github.com/golang/lint)
-  - go test -v ./... -covermode=count -coverprofile=coverage.out
-  - $GOPATH/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+  - go test -v ./...
+  - gover
+  - goveralls -coverprofile=gover.coverprofile -service=travis-ci -repotoken $COVERALLS_TOKEN

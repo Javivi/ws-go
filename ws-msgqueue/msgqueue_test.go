@@ -44,19 +44,19 @@ func TestInitServer(t *testing.T) {
 }
 
 func TestRoundtrip(t *testing.T) {
-	popUrl := url.URL{Scheme: "wss", Host: "localhost:8080", Path: "/popmsg"}
-	pushUrl := url.URL{Scheme: "wss", Host: "localhost:8080", Path: "/pushmsg"}
+	popURL := url.URL{Scheme: "wss", Host: "localhost:8080", Path: "/popmsg"}
+	pushURL := url.URL{Scheme: "wss", Host: "localhost:8080", Path: "/pushmsg"}
 
 	authHeader := http.Header{"Authorization": {"Basic " + base64.StdEncoding.EncodeToString([]byte("hello:test"))}}
 	websocket.DefaultDialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	popConn, _, err := websocket.DefaultDialer.Dial(popUrl.String(), authHeader)
+	popConn, _, err := websocket.DefaultDialer.Dial(popURL.String(), authHeader)
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	pushConn, _, err := websocket.DefaultDialer.Dial(pushUrl.String(), authHeader)
+	pushConn, _, err := websocket.DefaultDialer.Dial(pushURL.String(), authHeader)
 
 	if err != nil {
 		t.Fatal(err)

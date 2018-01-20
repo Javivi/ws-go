@@ -1,6 +1,7 @@
-go:
-  - master
+language: go
 
+go:
+  - 1.9.2
 
 notifications:
   email: false
@@ -12,10 +13,12 @@ before_script:
   - GO_FILES=$(find . -iname '*.go' -type f)
   - go get github.com/gorilla/websocket
   - go get github.com/golang/lint/golint
+  - go get github.com/mattn/goveralls
 
 script:
   - echo "$WS_CERT_DIR"
   - test -z $(gofmt -s -l $GO_FILES)  # check if files are gofmt'ed (https://golang.org/cmd/gofmt/)
   - go vet ./...                      # go vet all the files        (https://golang.org/cmd/vet/)
   - golint -set_exit_status ./...     # check coding style          (https://github.com/golang/lint)
-  - go test -v ./...
+  - go test -v ./... -covermode=count -coverprofile=coverage.out
+  - $GOPATH/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN

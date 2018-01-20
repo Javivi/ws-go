@@ -20,15 +20,19 @@ var messageQueue = make(chan []byte, 100)
 
 func main() {
 	ready := make(chan bool, 10)
-	err := initServer("localhost:8080", ready)
+	err := initServer("localhost:8080", os.Getenv("WS_CERT_DIR"), ready)
 
 	if err != nil {
 		fmt.Printf("ERROR [%s] initialising server\n", err)
 	}
 }
 
-func initServer(addr string, ch chan<- bool) error {
-	defer close(ch)
+func initServer(addr string, certDir string, ch chan<- bool) error {
+	//defer close(ch)
+	if certDir == "" {
+		err := errors.New("initServer: certDir is not defined")
+		return err
+	}
 
 	http.HandleFunc("/pushmsg", func(w http.ResponseWriter, r *http.Request) {
 		username, password, ok := r.BasicAuth()
@@ -90,13 +94,6 @@ func initServer(addr string, ch chan<- bool) error {
 			}
 		}()
 	})
-
-	certDir := os.Getenv("WS_CERT_DIR")
-
-	if certDir == "" {
-		err := errors.New("initServer: WS_CERT_DIR is not defined")
-		return err
-	}
 
 	ch <- true
 

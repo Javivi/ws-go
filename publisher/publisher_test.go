@@ -24,6 +24,7 @@ func TestMain(m *testing.M) {
 		if err != nil {
 			fmt.Println(err)
 			serverRunning = false
+			close(ready)
 		}
 	}()
 
@@ -40,7 +41,7 @@ func TestNoCertDir(t *testing.T) {
 	ready := make(chan bool)
 
 	go func() {
-		initServer("localhost:8081", "", ready)
+		initServer("localhost:8889", "", ready)
 	}()
 
 	select {

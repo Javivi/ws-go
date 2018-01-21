@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
@@ -22,7 +21,7 @@ var upgrader = websocket.Upgrader{
 
 var subscribers = make(map[string]map[*websocket.Conn]bool)
 
-type Message struct {
+type message struct {
 	Topic   string
 	Content string
 }
@@ -37,8 +36,7 @@ func main() {
 
 	go popMessages(popConn)
 
-	ready := make(chan bool, 1)
-	err = initServer("localhost:8082", os.Getenv("WS_CERT_DIR"), ready)
+	err = initServer("localhost:8082", os.Getenv("WS_CERT_DIR"), nil)
 
 	if err != nil {
 		fmt.Printf("[subscriber] error initialising server\n%s", err)
@@ -70,7 +68,7 @@ func popMessages(conn *websocket.Conn) {
 
 		fmt.Printf("[subscriber] received %s\n", msg)
 
-		var m Message
+		var m message
 		err = json.Unmarshal(msg, &m)
 
 		if err != nil {
@@ -91,9 +89,10 @@ func popMessages(conn *websocket.Conn) {
 	}
 }
 
-func initServer(addr string, certDir string, ch chan<- bool) error {
-	if certDir == "" {
-		err := errors.New("initServer: certDir is not defined")
+func initServer(addr string, certDir string, serverReady chan<- bool) error {
+	cert, err := tls.LoadX509KeyPair(certDir+"server.crt", certDir+"server.key")
+
+	if err != nil {
 		return err
 	}
 
@@ -114,7 +113,7 @@ func initServer(addr string, certDir string, ch chan<- bool) error {
 
 		go func() {
 			for {
-				msg := &Message{}
+				msg := &message{}
 				err := conn.ReadJSON(msg)
 
 				if err != nil {
@@ -143,13 +142,20 @@ func initServer(addr string, certDir string, ch chan<- bool) error {
 		}()
 	})
 
-	ch <- true
+	config := &tls.Config{Certificates: []tls.Certificate{cert}}
+	listener, err := tls.Listen("tcp", addr, config)
 
-	err := http.ListenAndServeTLS(addr, certDir+"server.crt", certDir+"server.key", nil)
-
-	if err != http.ErrServerClosed {
+	if err != nil {
 		return err
 	}
+
+	defer listener.Close()
+
+	if serverReady != nil {
+		serverReady <- true
+	}
+
+	http.Serve(listener, nil)
 
 	return nil
 }

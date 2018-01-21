@@ -1,7 +1,7 @@
 package main
 
 import (
-	"errors"
+	"crypto/tls"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
@@ -19,18 +19,17 @@ var upgrader = websocket.Upgrader{
 var messageQueue = make(chan []byte, 100)
 
 func main() {
-	ready := make(chan bool, 10)
-	err := initServer("localhost:8080", os.Getenv("WS_CERT_DIR"), ready)
+	err := initServer("localhost:8080", os.Getenv("WS_CERT_DIR"), nil)
 
 	if err != nil {
 		fmt.Printf("[msgqueue] error initialising server\n%s", err)
 	}
 }
 
-func initServer(addr string, certDir string, ch chan<- bool) error {
-	//defer close(ch)
-	if certDir == "" {
-		err := errors.New("initServer: certDir is not defined")
+func initServer(addr string, certDir string, serverReady chan<- bool) error {
+	cert, err := tls.LoadX509KeyPair(certDir+"server.crt", certDir+"server.key")
+
+	if err != nil {
 		return err
 	}
 
@@ -96,13 +95,20 @@ func initServer(addr string, certDir string, ch chan<- bool) error {
 		}()
 	})
 
-	ch <- true
+	config := &tls.Config{Certificates: []tls.Certificate{cert}}
+	listener, err := tls.Listen("tcp", addr, config)
 
-	err := http.ListenAndServeTLS(addr, certDir+"server.crt", certDir+"server.key", nil)
-
-	if err != http.ErrServerClosed {
+	if err != nil {
 		return err
 	}
+
+	defer listener.Close()
+
+	if serverReady != nil {
+		serverReady <- true
+	}
+
+	http.Serve(listener, nil)
 
 	return nil
 }

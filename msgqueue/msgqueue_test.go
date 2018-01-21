@@ -24,6 +24,7 @@ func TestMain(m *testing.M) {
 		if err != nil {
 			fmt.Println(err)
 			serverRunning = false
+			close(ready)
 		}
 	}()
 
@@ -36,11 +37,19 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestNoCertDir(t *testing.T) {
+func TestInitServer(t *testing.T) {
+	if serverRunning == false {
+		// t. will only show up after the tests are done, it doesn't work if we force the exit
+		fmt.Println("[tests] Server not running")
+		os.Exit(1)
+	}
+}
+
+func TestNoCertFound(t *testing.T) {
 	ready := make(chan bool)
 
 	go func() {
-		initServer("localhost:8080", "", ready)
+		initServer("localhost:8888", "", ready)
 	}()
 
 	select {
@@ -48,14 +57,6 @@ func TestNoCertDir(t *testing.T) {
 		t.Fatal()
 	case <-time.After(time.Second * 3):
 		return
-	}
-}
-
-func TestInitServer(t *testing.T) {
-	if serverRunning == false {
-		// t. will only show up after the tests are done, it doesn't work if we force the exit
-		fmt.Println("[tests] Server not running")
-		os.Exit(1)
 	}
 }
 

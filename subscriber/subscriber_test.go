@@ -153,9 +153,19 @@ func TestRoundtrip(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	go popMessages(popConn)
+	exitRoutine := make(chan bool)
+	go func() {
+		for {
+			select {
+			case <-exitRoutine:
+				return
+			default:
+				popMessages(popConn)
+			}
+		}
+	}()
 
-	subConn.SetReadDeadline(time.Now().Add(time.Second * 10))
+	subConn.SetReadDeadline(time.Now().Add(time.Second * 3))
 
 	msg := &message{}
 	err = subConn.ReadJSON(msg)
@@ -166,5 +176,30 @@ func TestRoundtrip(t *testing.T) {
 
 	if msg.Topic != "test" || msg.Content != "message" {
 		t.Fatal("[tests] Messages don't match")
+	}
+
+	exitRoutine <- true
+	close(exitRoutine)
+
+	err = subConn.WriteJSON(message{"test", "unsub"})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	popConn.WriteMessage(websocket.TextMessage, []byte("dummy message"))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	go popMessages(popConn)
+
+	subConn.SetReadDeadline(time.Now().Add(time.Second * 3))
+
+	_, _, err = subConn.ReadMessage()
+
+	if err == nil {
+		t.Fatal("[tests] Received a message after unsubscribing")
 	}
 }

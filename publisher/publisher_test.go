@@ -3,11 +3,9 @@ package main
 import (
 	"bytes"
 	"crypto/tls"
-	"encoding/base64"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"net/http"
-	"net/url"
 	"os"
 	"testing"
 	"time"
@@ -61,15 +59,17 @@ func TestInitServer(t *testing.T) {
 }
 
 func TestInvalidCredentials(t *testing.T) {
-	pubURL := url.URL{Scheme: "wss", Host: "localhost:8081", Path: "/publish"}
-
-	authHeader := http.Header{"Authorization": {"Basic " + base64.StdEncoding.EncodeToString([]byte("fail:test"))}}
-	websocket.DefaultDialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-
-	_, _, err := websocket.DefaultDialer.Dial(pubURL.String(), authHeader)
-
+	_, err := dialToService("localhost:8081", "/publish", "fail", "test")
 	if err != websocket.ErrBadHandshake {
 		t.Fatal("[test] Successfully authenticated with bad credentials")
+	}
+}
+
+func TestDialerFail(t *testing.T) {
+	_, err := dialToService("invalid addr", "", "fail", "test")
+
+	if err == nil {
+		t.Fatal("[test] Successfully dialed to a wrong address")
 	}
 }
 
@@ -130,7 +130,22 @@ func TestRoundtrip(t *testing.T) {
 		}
 	})
 
-	go http.ListenAndServeTLS("localhost:8089", os.Getenv("WS_CERT_DIR")+"server.crt", os.Getenv("WS_CERT_DIR")+"server.key", nil)
+	cert, err := tls.LoadX509KeyPair(os.Getenv("WS_CERT_DIR")+"server.crt", os.Getenv("WS_CERT_DIR")+"server.key")
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	config := &tls.Config{Certificates: []tls.Certificate{cert}}
+	listener, err := tls.Listen("tcp", "localhost:8089", config)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	defer listener.Close()
+
+	go http.Serve(listener, nil)
 
 	pushConn, err := dialToService("localhost:8081", "/publish", "hello", "test")
 

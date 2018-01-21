@@ -25,7 +25,7 @@ func main() {
 	pushConn, err := dialToService("localhost:8080", "/pushmsg", "hello", "test")
 
 	if err != nil {
-		fmt.Printf("ERROR [%s] dialing server\n", err)
+		fmt.Printf("[publisher] error dialing server\n%s", err)
 		return
 	}
 
@@ -35,22 +35,22 @@ func main() {
 	err = initServer("localhost:8081", os.Getenv("WS_CERT_DIR"), ready)
 
 	if err != nil {
-		fmt.Printf("ERROR [%s] initialising server\n", err)
+		fmt.Printf("[publisher] error initialising server\n%s", err)
 	}
 }
 
 func dialToService(addr string, path string, username string, password string) (*websocket.Conn, error) {
-	pushURL := url.URL{Scheme: "wss", Host: addr, Path: path}
+	serviceURL := url.URL{Scheme: "wss", Host: addr, Path: path}
 	authHeader := http.Header{"Authorization": {"Basic " + base64.StdEncoding.EncodeToString([]byte(username+":"+password))}}
 	websocket.DefaultDialer.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 
-	pushConn, _, err := websocket.DefaultDialer.Dial(pushURL.String(), authHeader)
+	serviceConn, _, err := websocket.DefaultDialer.Dial(serviceURL.String(), authHeader)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return pushConn, nil
+	return serviceConn, nil
 }
 
 func pushMessages(conn *websocket.Conn) {
@@ -60,11 +60,11 @@ func pushMessages(conn *websocket.Conn) {
 			err := conn.WriteMessage(websocket.TextMessage, msg)
 
 			if err != nil {
-				fmt.Printf("ERROR [%s] sending msg: %s\n", err, msg)
+				fmt.Printf("[publisher] error sending msg: %s\n%s", msg, err)
 				continue
 			}
 
-			fmt.Printf("[publisher] pushing %s", msg)
+			fmt.Printf("[publisher] pushing %s\n", msg)
 		}
 	}
 }
@@ -79,14 +79,14 @@ func initServer(addr string, certDir string, ch chan<- bool) error {
 		username, password, ok := r.BasicAuth()
 
 		if !ok || username != "hello" || password != "test" {
-			fmt.Printf("ERROR [%s:%s] invalid credentials\n", username, password)
+			fmt.Printf("[publisher] error validating credentials [%s:%s]\n", username, password)
 			return
 		}
 
 		conn, err := upgrader.Upgrade(w, r, nil)
 
 		if err != nil {
-			fmt.Printf("ERROR [%s] upgrading connection\n", err)
+			fmt.Printf("[publisher] error upgrading connection\n%s", err)
 			return
 		}
 
@@ -101,7 +101,7 @@ func initServer(addr string, certDir string, ch chan<- bool) error {
 
 				thingsToPush <- msg
 
-				fmt.Printf("[publisher] received %s", msg)
+				fmt.Printf("[publisher] received %s\n", msg)
 			}
 		}()
 	})

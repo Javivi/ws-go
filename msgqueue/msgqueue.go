@@ -23,7 +23,7 @@ func main() {
 	err := initServer("localhost:8080", os.Getenv("WS_CERT_DIR"), ready)
 
 	if err != nil {
-		fmt.Printf("ERROR [%s] initialising server\n", err)
+		fmt.Printf("[msgqueue] error initialising server\n%s", err)
 	}
 }
 
@@ -38,14 +38,14 @@ func initServer(addr string, certDir string, ch chan<- bool) error {
 		username, password, ok := r.BasicAuth()
 
 		if !ok || username != "hello" || password != "test" {
-			fmt.Printf("ERROR [%s:%s] invalid credentials\n", username, password)
+			fmt.Printf("[msgqueue] error validating credentials [%s:%s]\n", username, password)
 			return
 		}
 
 		conn, err := upgrader.Upgrade(w, r, nil)
 
 		if err != nil {
-			fmt.Printf("ERROR [%s] upgrading connection\n", err)
+			fmt.Printf("[msgqueue] error upgrading connection\n%s", err)
 			return
 		}
 
@@ -54,11 +54,12 @@ func initServer(addr string, certDir string, ch chan<- bool) error {
 				_, msg, err := conn.ReadMessage()
 
 				if err != nil {
-					fmt.Printf("ERROR [%s] reading message\n", err)
+					fmt.Printf("[msgqueue] error reading message\n%s", err)
 					return
 				}
 
 				messageQueue <- msg
+
 				fmt.Printf("[msgqueue] pushing message: %s\n", msg)
 			}
 		}()
@@ -68,14 +69,14 @@ func initServer(addr string, certDir string, ch chan<- bool) error {
 		username, password, ok := r.BasicAuth()
 
 		if !ok || username != "hello" || password != "test" {
-			fmt.Printf("ERROR [%s:%s] invalid credentials\n", username, password)
+			fmt.Printf("[msgqueue] error validating credentials [%s:%s]\n", username, password)
 			return
 		}
 
 		conn, err := upgrader.Upgrade(w, r, nil)
 
 		if err != nil {
-			fmt.Printf("ERROR [%s] upgrading connection\n", err)
+			fmt.Printf("[msgqueue] error upgrading connection\n%s", err)
 			return
 		}
 
@@ -87,7 +88,7 @@ func initServer(addr string, certDir string, ch chan<- bool) error {
 					err := conn.WriteMessage(websocket.TextMessage, msg)
 
 					if err != nil {
-						fmt.Printf("ERROR [%s] sending message\n", err)
+						fmt.Printf("[msgqueue] error sending message\n%s", err)
 						return
 					}
 				}

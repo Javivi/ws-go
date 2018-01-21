@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-type Message struct {
+type message struct {
 	Topic   string
 	Content string
 }
@@ -53,7 +53,7 @@ func dialToService(addr string, path string, username string, password string) (
 
 func readMessages(conn *websocket.Conn) {
 	for {
-		msg := &Message{}
+		msg := &message{}
 		err := conn.ReadJSON(msg)
 
 		if err != nil {
@@ -93,7 +93,7 @@ func writeMessages(pubConn *websocket.Conn, subConn *websocket.Conn) {
 		secondPart := msg[firstWhitespace+1:]
 
 		if firstPart == "sub" || firstPart == "unsub" {
-			err = subConn.WriteJSON(Message{secondPart, firstPart})
+			err = subConn.WriteJSON(message{secondPart, firstPart})
 
 			if err != nil {
 				fmt.Println(err)
@@ -103,7 +103,7 @@ func writeMessages(pubConn *websocket.Conn, subConn *websocket.Conn) {
 			continue
 		}
 
-		err = pubConn.WriteJSON(Message{firstPart, secondPart})
+		err = pubConn.WriteJSON(message{firstPart, secondPart})
 
 		if err != nil {
 			fmt.Println(err)

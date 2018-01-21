@@ -23,5 +23,6 @@ script:
   - golint -set_exit_status ./...     # check coding style          (https://github.com/golang/lint)
   - go test -v ./msgqueue -coverprofile=msgqueue.coverprofile
   - go test -v ./publisher -coverprofile=publisher.coverprofile
+  - go test -v ./subscriber -coverprofile=subscriber.coverprofile
   - gover
   - goveralls -coverprofile=gover.coverprofile -service=travis-ci -repotoken $COVERALLS_TOKEN

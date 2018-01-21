@@ -4,4 +4,4 @@
 
 # WebSocket pub/sub/queue example
 
-![demo](https://github.com/javivi/ws-go/smalldemo.gif)
+![demo](https://github.com/Javivi/ws-go/blob/master/smalldemo.gif)

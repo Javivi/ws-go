@@ -104,28 +104,28 @@ func TestRoundtrip(t *testing.T) {
 		username, password, ok := r.BasicAuth()
 
 		if !ok || username != "hello" || password != "test" {
-			fmt.Printf("ERROR [%s:%s] invalid credentials\n", username, password)
-
+			fmt.Printf("[tests] Error validating credentials [%s:%s]\n", username, password)
+			return
 		}
 
 		conn, err := upgrader.Upgrade(w, r, nil)
 
 		if err != nil {
-			fmt.Printf("ERROR [%s] upgrading connection\n", err)
+			fmt.Printf("[tests] Error upgrading connection\n%s", err)
 			return
 		}
 
 		_, msg, err := conn.ReadMessage()
 
 		if err != nil {
-			fmt.Printf("ERROR [%s] reading message\n", err)
+			fmt.Printf("[tests] Error reading message\n%s", err)
 			return
 		}
 
 		err = conn.WriteMessage(websocket.TextMessage, msg)
 
 		if err != nil {
-			fmt.Printf("ERROR [%s] sending message\n", err)
+			fmt.Printf("[tests] Error sending message\n%s", err)
 			return
 		}
 	})
@@ -175,6 +175,6 @@ func TestRoundtrip(t *testing.T) {
 	}
 
 	if !bytes.Equal(msg, []byte("hello team!")) {
-		t.Fatal("[tests] messages don't match")
+		t.Fatal("[tests] Messages don't match")
 	}
 }

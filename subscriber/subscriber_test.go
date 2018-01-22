@@ -114,11 +114,20 @@ func TestRoundtrip(t *testing.T) {
 			return
 		}
 
-		err = conn.WriteJSON(message{"test", "message"})
+		for {
+			_, msg, err := conn.ReadMessage()
 
-		if err != nil {
-			fmt.Printf("[msgqueue] Error sending message\n%s", err)
-			return
+			if err != nil {
+				fmt.Printf("[tests] Error reading message\n%s", err)
+				return
+			}
+
+			err = conn.WriteMessage(websocket.TextMessage, msg)
+
+			if err != nil {
+				fmt.Printf("[tests] Error sending message\n%s", err)
+				return
+			}
 		}
 	})
 
@@ -145,13 +154,25 @@ func TestRoundtrip(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	err = popConn.WriteJSON(message{"test", "message"})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	subConn, err := dialToService("localhost:8082", "/subscribe", "hello", "test")
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	err = subConn.WriteJSON(message{"test", "sub"})
 
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	time.Sleep(time.Second * 3)
 
 	exitRoutine := make(chan bool)
 	go func() {
@@ -160,7 +181,7 @@ func TestRoundtrip(t *testing.T) {
 			case <-exitRoutine:
 				return
 			default:
-				popMessages(popConn)
+				popMessages(popConn, exitRoutine)
 			}
 		}
 	}()
@@ -178,22 +199,17 @@ func TestRoundtrip(t *testing.T) {
 		t.Fatal("[tests] Messages don't match")
 	}
 
-	exitRoutine <- true
-	close(exitRoutine)
-
 	err = subConn.WriteJSON(message{"test", "unsub"})
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	popConn.WriteMessage(websocket.TextMessage, []byte("dummy message"))
+	err = popConn.WriteJSON(message{"test", "message"})
 
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	go popMessages(popConn)
 
 	subConn.SetReadDeadline(time.Now().Add(time.Second * 3))
 

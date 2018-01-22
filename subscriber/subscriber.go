@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sync"
 )
 
 var upgrader = websocket.Upgrader{
@@ -19,7 +20,12 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-var subscribers = make(map[string]map[*websocket.Conn]bool)
+type safeSubscribe struct {
+	subs map[string]map[*websocket.Conn]bool
+	mux  sync.Mutex
+}
+
+var subscribers = safeSubscribe{subs: make(map[string]map[*websocket.Conn]bool)}
 
 type message struct {
 	Topic   string
@@ -30,16 +36,16 @@ func main() {
 	popConn, err := dialToService("localhost:8080", "/popmsg", "hello", "test")
 
 	if err != nil {
-		fmt.Printf("[subscriber] error dialing server\n%s", err)
+		fmt.Printf("[subscriber] Error dialing server\n%s\n", err)
 		return
 	}
 
-	go popMessages(popConn)
+	go popMessages(popConn, nil)
 
 	err = initServer("localhost:8082", os.Getenv("WS_CERT_DIR"), nil)
 
 	if err != nil {
-		fmt.Printf("[subscriber] error initialising server\n%s", err)
+		fmt.Printf("[subscriber] Error initialising server\n%s\n", err)
 	}
 }
 
@@ -57,35 +63,46 @@ func dialToService(addr string, path string, username string, password string) (
 	return serviceConn, nil
 }
 
-func popMessages(conn *websocket.Conn) {
+func popMessages(conn *websocket.Conn, connClosed chan bool) {
 	for {
 		_, msg, err := conn.ReadMessage()
 
 		if err != nil {
-			fmt.Println(err)
-			return
+			fmt.Printf("[subscriber] Error reading message\n%s\n", err)
+
+			if connClosed != nil {
+				close(connClosed)
+			}
+
+			break
 		}
 
-		fmt.Printf("[subscriber] received %s\n", msg)
+		fmt.Printf("[subscriber] Received %s\n", msg)
 
 		var m message
 		err = json.Unmarshal(msg, &m)
 
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("[subscriber] JSON unmarshal error %s\n", err)
 			return
 		}
 
-		for sub := range subscribers[m.Topic] {
+		subscribers.mux.Lock()
+		for sub := range subscribers.subs[m.Topic] {
 			err := sub.WriteMessage(websocket.TextMessage, msg)
 
 			if err != nil {
-				fmt.Printf("[subscriber] error sending message to one subscriber\n%s", err)
+				fmt.Printf("[subscriber] Error sending message to one subscriber\n%s\n", err)
 				continue
 			}
 
-			fmt.Printf("[subscriber] pushing %s\n", msg)
+			fmt.Printf("[subscriber] Pushing %s\n", msg)
 		}
+
+		if len(subscribers.subs[m.Topic]) == 0 {
+			fmt.Printf("[subscriber] Ignoring message for topic without subscribers %s\n", msg)
+		}
+		subscribers.mux.Unlock()
 	}
 }
 
@@ -100,14 +117,14 @@ func initServer(addr string, certDir string, serverReady chan<- bool) error {
 		username, password, ok := r.BasicAuth()
 
 		if !ok || username != "hello" || password != "test" {
-			fmt.Printf("[subscriber] error validating credentials [%s:%s]\n", username, password)
+			fmt.Printf("[subscriber] Error validating credentials [%s:%s]\n", username, password)
 			return
 		}
 
 		conn, err := upgrader.Upgrade(w, r, nil)
 
 		if err != nil {
-			fmt.Printf("[subscriber] error upgrading connection\n%s", err)
+			fmt.Printf("[subscriber] Error upgrading connection\n%s\n", err)
 			return
 		}
 
@@ -117,27 +134,33 @@ func initServer(addr string, certDir string, serverReady chan<- bool) error {
 				err := conn.ReadJSON(msg)
 
 				if err != nil {
-					fmt.Println(err)
+					fmt.Printf("[subscriber] Error reading JSON\n%s\n", err)
 					return
 				}
 
-				if subscribers[msg.Topic] == nil {
-					subscribers[msg.Topic] = make(map[*websocket.Conn]bool)
+				if subscribers.subs[msg.Topic] == nil {
+					subscribers.mux.Lock()
+					subscribers.subs[msg.Topic] = make(map[*websocket.Conn]bool)
+					subscribers.mux.Unlock()
 				}
 
 				if msg.Content == "sub" {
-					subscribers[msg.Topic][conn] = true
-					fmt.Printf("[subscriber] subscribed to %s\n", msg.Topic)
+					subscribers.mux.Lock()
+					subscribers.subs[msg.Topic][conn] = true
+					subscribers.mux.Unlock()
+					fmt.Printf("[subscriber] Subscribed to %s\n", msg.Topic)
 					continue
 				}
 
 				if msg.Content == "unsub" {
-					delete(subscribers[msg.Topic], conn)
-					fmt.Printf("[subscriber] unsubscribed from %s\n", msg.Topic)
+					subscribers.mux.Lock()
+					delete(subscribers.subs[msg.Topic], conn)
+					subscribers.mux.Unlock()
+					fmt.Printf("[subscriber] Unsubscribed from %s\n", msg.Topic)
 					continue
 				}
 
-				fmt.Printf("[subscriber] ignoring invalid message %v\n", msg)
+				fmt.Printf("[subscriber] Ignoring invalid message %s\n", msg)
 			}
 		}()
 	})

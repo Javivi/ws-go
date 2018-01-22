@@ -74,7 +74,7 @@ func popMessages(conn *websocket.Conn, connClosed chan bool) {
 				close(connClosed)
 			}
 
-			break
+			return
 		}
 
 		fmt.Printf("[subscriber] Received %s\n", msg)

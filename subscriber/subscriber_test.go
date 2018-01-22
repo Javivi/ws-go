@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
 	"github.com/gorilla/websocket"
@@ -122,6 +123,17 @@ func TestRoundtrip(t *testing.T) {
 				return
 			}
 
+			if bytes.Equal(msg, []byte("")) {
+				err = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+
+				if err != nil {
+					fmt.Printf("[tests] Error closing\n%s", err)
+					return
+				}
+
+				return
+			}
+
 			err = conn.WriteMessage(websocket.TextMessage, msg)
 
 			if err != nil {
@@ -217,5 +229,19 @@ func TestRoundtrip(t *testing.T) {
 
 	if err == nil {
 		t.Fatal("[tests] Received a message after unsubscribing")
+	}
+
+	err = popConn.WriteMessage(websocket.TextMessage, []byte(""))
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	subConn.SetReadDeadline(time.Now().Add(time.Second * 3))
+
+	_, _, err = subConn.ReadMessage()
+
+	if websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+		t.Fatal("[tests] Received a message after closing the websocket")
 	}
 }

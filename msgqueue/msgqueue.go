@@ -22,7 +22,8 @@ func main() {
 	err := initServer("localhost:8080", os.Getenv("WS_CERT_DIR"), nil)
 
 	if err != nil {
-		fmt.Printf("[msgqueue] error initialising server\n%s", err)
+		fmt.Printf("[msgqueue] Error initialising server\n%s", err)
+		os.Exit(1)
 	}
 }
 
@@ -37,14 +38,14 @@ func initServer(addr string, certDir string, serverReady chan<- bool) error {
 		username, password, ok := r.BasicAuth()
 
 		if !ok || username != "hello" || password != "test" {
-			fmt.Printf("[msgqueue] error validating credentials [%s:%s]\n", username, password)
+			fmt.Printf("[msgqueue] Error validating credentials [%s:%s]\n", username, password)
 			return
 		}
 
 		conn, err := upgrader.Upgrade(w, r, nil)
 
 		if err != nil {
-			fmt.Printf("[msgqueue] error upgrading connection\n%s", err)
+			fmt.Printf("[msgqueue] Error upgrading connection\n%s", err)
 			return
 		}
 
@@ -53,13 +54,13 @@ func initServer(addr string, certDir string, serverReady chan<- bool) error {
 				_, msg, err := conn.ReadMessage()
 
 				if err != nil {
-					fmt.Printf("[msgqueue] error reading message\n%s", err)
+					fmt.Printf("[msgqueue] Error reading message\n%s", err)
 					return
 				}
 
 				messageQueue <- msg
 
-				fmt.Printf("[msgqueue] pushing message: %s\n", msg)
+				fmt.Printf("[msgqueue] Pushing message: %s\n", msg)
 			}
 		}()
 	})
@@ -68,14 +69,14 @@ func initServer(addr string, certDir string, serverReady chan<- bool) error {
 		username, password, ok := r.BasicAuth()
 
 		if !ok || username != "hello" || password != "test" {
-			fmt.Printf("[msgqueue] error validating credentials [%s:%s]\n", username, password)
+			fmt.Printf("[msgqueue] Error validating credentials [%s:%s]\n", username, password)
 			return
 		}
 
 		conn, err := upgrader.Upgrade(w, r, nil)
 
 		if err != nil {
-			fmt.Printf("[msgqueue] error upgrading connection\n%s", err)
+			fmt.Printf("[msgqueue] Error upgrading connection\n%s", err)
 			return
 		}
 
@@ -83,11 +84,11 @@ func initServer(addr string, certDir string, serverReady chan<- bool) error {
 			for {
 				select {
 				case msg := <-messageQueue:
-					fmt.Printf("[msgqueue] popping message: %s\n", msg)
+					fmt.Printf("[msgqueue] Popping message: %s\n", msg)
 					err := conn.WriteMessage(websocket.TextMessage, msg)
 
 					if err != nil {
-						fmt.Printf("[msgqueue] error sending message\n%s", err)
+						fmt.Printf("[msgqueue] Error sending message\n%s", err)
 						return
 					}
 				}

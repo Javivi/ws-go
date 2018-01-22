@@ -21,15 +21,15 @@ func main() {
 	pubConn, err := dialToService("localhost:8081", "/publish", "hello", "test")
 
 	if err != nil {
-		fmt.Printf("[clientdemo] error dialing server\n%s", err)
-		return
+		fmt.Printf("[clientdemo] Error dialing pub server\n%s", err)
+		os.Exit(1)
 	}
 
 	subConn, err := dialToService("localhost:8082", "/subscribe", "hello", "test")
 
 	if err != nil {
-		fmt.Printf("[clientdemo] error dialing server\n%s", err)
-		return
+		fmt.Printf("[clientdemo] Error dialing sub server\n%s", err)
+		os.Exit(1)
 	}
 
 	go readMessages(subConn)
@@ -72,7 +72,7 @@ func writeMessages(pubConn *websocket.Conn, subConn *websocket.Conn) {
 		err := input.Err()
 
 		if err != nil {
-			fmt.Println("[clientdemo] error reading input")
+			fmt.Println("[clientdemo] Error reading input")
 			return
 		}
 

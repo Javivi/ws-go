@@ -37,7 +37,7 @@ func main() {
 
 	if err != nil {
 		fmt.Printf("[subscriber] Error dialing server\n%s\n", err)
-		return
+		os.Exit(1)
 	}
 
 	go popMessages(popConn, nil)
@@ -46,6 +46,7 @@ func main() {
 
 	if err != nil {
 		fmt.Printf("[subscriber] Error initialising server\n%s\n", err)
+		os.Exit(1)
 	}
 }
 

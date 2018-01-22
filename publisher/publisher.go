@@ -24,8 +24,8 @@ func main() {
 	pushConn, err := dialToService("localhost:8080", "/pushmsg", "hello", "test")
 
 	if err != nil {
-		fmt.Printf("[publisher] error dialing server\n%s", err)
-		return
+		fmt.Printf("[publisher] Error dialing server\n%s", err)
+		os.Exit(1)
 	}
 
 	go pushMessages(pushConn)
@@ -33,7 +33,8 @@ func main() {
 	err = initServer("localhost:8081", os.Getenv("WS_CERT_DIR"), nil)
 
 	if err != nil {
-		fmt.Printf("[publisher] error initialising server\n%s", err)
+		fmt.Printf("[publisher] Error initialising server\n%s", err)
+		os.Exit(1)
 	}
 }
 
@@ -58,11 +59,11 @@ func pushMessages(conn *websocket.Conn) {
 			err := conn.WriteMessage(websocket.TextMessage, msg)
 
 			if err != nil {
-				fmt.Printf("[publisher] error sending msg: %s\n%s", msg, err)
+				fmt.Printf("[publisher] Error sending msg: %s\n%s", msg, err)
 				continue
 			}
 
-			fmt.Printf("[publisher] pushing %s\n", msg)
+			fmt.Printf("[publisher] Pushing %s\n", msg)
 		}
 	}
 }
@@ -78,14 +79,14 @@ func initServer(addr string, certDir string, serverReady chan<- bool) error {
 		username, password, ok := r.BasicAuth()
 
 		if !ok || username != "hello" || password != "test" {
-			fmt.Printf("[publisher] error validating credentials [%s:%s]\n", username, password)
+			fmt.Printf("[publisher] Error validating credentials [%s:%s]\n", username, password)
 			return
 		}
 
 		conn, err := upgrader.Upgrade(w, r, nil)
 
 		if err != nil {
-			fmt.Printf("[publisher] error upgrading connection\n%s", err)
+			fmt.Printf("[publisher] Error upgrading connection\n%s", err)
 			return
 		}
 
@@ -100,7 +101,7 @@ func initServer(addr string, certDir string, serverReady chan<- bool) error {
 
 				thingsToPush <- msg
 
-				fmt.Printf("[publisher] received %s\n", msg)
+				fmt.Printf("[publisher] Received %s\n", msg)
 			}
 		}()
 	})

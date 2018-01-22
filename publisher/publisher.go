@@ -119,6 +119,7 @@ func initServer(addr string, certDir string, serverReady chan<- bool) error {
 		serverReady <- true
 	}
 
+	fmt.Println("[publisher] Server running")
 	http.Serve(listener, nil)
 
 	return nil

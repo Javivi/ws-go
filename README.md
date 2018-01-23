@@ -12,7 +12,7 @@ This project consist of three parts:
 * [publisher](https://github.com/Javivi/ws-go/tree/master/publisher): A microservice that listens for incoming messages and pushes them to the message queue
 * [subscriber](https://github.com/Javivi/ws-go/tree/master/subscriber): A microservice that listens for incoming subscribe/unsubscribe messages and also handles messages coming from the message queue and pushes them to whoever has subscribed to the topic of the message
 
-There's also [an example client](https://github.com/Javivi/ws-go/tree/master/clientdemo) that can be used to test the microservices as shown [on this demonstration video](https://github.com/Javivi/ws-go/blob/master/fulldemo.webm?raw=true).
+There's also [an example client](https://github.com/Javivi/ws-go/tree/master/clientdemo) that can be used to test the microservices as shown [on this demonstration video](https://github.com/Javivi/ws-go/raw/master/fulldemo.mp4).
 
 ## Endpoints
 In order to connect to any of the endpoints, a TLS connection must be used and a Basic HTTP Authentication header with valid credentials must be present on the request. For this demonstration project, a self-signed certificate can be found at the directory defined on the environment variable *WS_CERT_DIR*. The validity of this certificate is not tested when making new connections. As for the authentication, the hardcoded values *hello* and *test* are used as username and password.

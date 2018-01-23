@@ -39,7 +39,7 @@ func TestNoCertDir(t *testing.T) {
 	ready := make(chan bool)
 
 	go func() {
-		initServer("localhost:8889", "", ready)
+		initServer("localhost:8889", ".invaliddir", ready)
 	}()
 
 	select {

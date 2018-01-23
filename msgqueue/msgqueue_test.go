@@ -45,11 +45,11 @@ func TestInitServer(t *testing.T) {
 	}
 }
 
-func TestNoCertFound(t *testing.T) {
+func TestNoCertDir(t *testing.T) {
 	ready := make(chan bool)
 
 	go func() {
-		initServer("localhost:8888", "", ready)
+		initServer("localhost:8888", ".invaliddir", ready)
 	}()
 
 	select {

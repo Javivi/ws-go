@@ -36,25 +36,26 @@ In order to connect to any of the endpoints, a TLS connection must be used and a
 Every endpoint is tested without the need of the other microservices to be running. In order to do so, both the microservice's server and an extra one are used to simulate the current and the next microservice (as shown on the flow diagram).
 
 ### Tests done
-Test Name | Purpose
--------------------
-TestInitServer | Tests if the server could be initialised for the tests
-TestNoCertDir | Tests if the server could be initialised without an SSL certificate
-TestInvalidCredentials | Tests if a connection can be made to the endpoints using the credentials *fail* and *test*, that differ from the hardcoded ones
-TestDialerFail | Tests that the dialer fails to connect to an invalid address
-TestFailedUpgrade | Tests if an invalid websocket connection can be made
-TestRoundtrip | Tests a full message roundtrip, simulating sending/receiving a message and sending/receiving it back, and checking the integrity of the message after the trip
+
+| Test Name | Purpose |
+|---------|--------- |
+| TestInitServer | Tests if the server could be initialised for the tests
+| TestNoCertDir | Tests if the server could be initialised without an SSL certificate
+| TestInvalidCredentials | Tests if a connection can be made to the endpoints using the credentials *fail* and *test*, that differ from the hardcoded ones
+| TestDialerFail | Tests that the dialer fails to connect to an invalid address
+| TestFailedUpgrade | Tests if an invalid websocket connection can be made
+| TestRoundtrip | Tests a full message roundtrip, simulating sending/receiving a message and sending/receiving it back, and checking the integrity of the message after the trip
 
 ### Coverage
 As reported by [coveralls.io](https://coveralls.io/github/Javivi/ws-go?branch=master)
 
 As reported by *go test -cover*
 
-Service | Coverage
-------------------
-msgqueue | 82%
-publisher | 77%
-subscriber | 75%
+|Service | Coverage |
+|---|---|
+|msgqueue | 82% |
+|publisher | 77% |
+|subscriber | 75% |
 
 
 # Continuous integration
